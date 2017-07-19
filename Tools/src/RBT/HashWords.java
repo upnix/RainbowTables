@@ -1,12 +1,13 @@
 package RBT;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -14,8 +15,22 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
+/**
+ * CLI program that accepts plain-text strings and outputs hashes as 40-character hex strings.
+ *
+ * @see Config
+ * @see Search
+ * @see Table
+ * @author Chris Cameron
+ */
 public class HashWords {
 
+  /**
+   * Generates a <code>CommandLine</code> object, given CLI arguments passed by user.
+   * @see CommandLine
+   * @param args CLI arguments from main(String[]) method
+   * @return Parsed CLI arguments in the form of a 'CommandLine' object
+   */
   private static CommandLine parseArguments(String[] args) {
     Options options = new Options();
 
@@ -51,6 +66,14 @@ public class HashWords {
     return cmd;
   }
 
+  /**
+   * A <code>BufferedWriter</code> encapsulated in a <code>try{}</code> block.
+   * This is done to allow the use of <code>BufferedWriter.write(String)</code> in a
+   * lambda expression.
+   * @see BufferedWriter#write(String)
+   * @param bw BufferedWriter
+   * @param s Hash in 40-character hex form to be written
+   */
   private static void safeBufferedWrite(BufferedWriter bw, String s) {
     try {
       bw.write(s);
@@ -59,6 +82,11 @@ public class HashWords {
     }
   }
 
+  /**
+   * Main method which reads input, generates necessary hashes, and writes output to screen or file.
+   * @param args CLI arguments from main(String[]) method
+   * @throws IOException Unable to create supplied output file
+   */
   public static void main(String[] args) throws IOException {
 
     CommandLine cmd = parseArguments(args);

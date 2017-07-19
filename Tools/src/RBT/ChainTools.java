@@ -4,6 +4,16 @@ import java.util.Arrays;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 
+/**
+ * CLI program which aims to provide several useful functions related to rainbow tables.
+ * Not suitable for general use at this point.
+ *
+ * @see Config
+ * @see HashWords
+ * @see Search
+ * @see Table
+ * @author Chris Cameron
+ */
 public class ChainTools {
   private static Options buildOptions() {
     Options options = new Options();

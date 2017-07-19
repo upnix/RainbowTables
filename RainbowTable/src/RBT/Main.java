@@ -1,22 +1,35 @@
 package RBT;
 
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
-
-/** CLI program to allow the creation and searching of rainbow tables. */
+/**
+ * CLI program to allow for the creation and searching of rainbow tables.
+ *
+ * @see Config
+ * @see Search
+ * @see Table
+ * @author Chris Cameron
+ */
 public class Main {
-
+  /** Allows for successful execution without CLI arguments. */
   final static boolean DEBUG = false;
 
-  // Used for clearing the terminal screen
+  /** Used for clearing the terminal screen. */
   private static final String ANSI_CLS = "\u001b[2J";
+  /** Used for clearing the terminal screen. */
   private static final String ANSI_HOME = "\u001b[H";
 
-  /** Creates an 'Options' object with the options necessary for this program. */
+  /**
+   * Creates an <code>Options</code> object with the options necessary for this program.
+   * These options are in addition to the default ones added in
+   * {@link Config#buildDefaultOptions(Options)}.
+   * @see Options
+   * @return 'Options' object with desired options
+   */
   private static Options buildOptions() {
     Options options = new Options();
     options.addOption(
@@ -32,7 +45,10 @@ public class Main {
     return options;
   }
 
-  /** Main method which kicks off the necessary steps to generate a table and allow searching */
+  /**
+   * Main method which kicks off the necessary steps to generate a table and allow searching.
+   * @param args User supplied CLI arguments
+   */
   public static void main(String[] args) {
     // For debugging
     String[] debug_args = {

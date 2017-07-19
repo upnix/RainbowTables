@@ -3,14 +3,33 @@ package RBT;
 import java.util.Arrays;
 import java.util.Scanner;
 
+/**
+ * Allows for searching of rainbow tables created by <code>Table</code>.
+ *
+ * @see Config
+ * @see Table
+ * @author Chris Cameron
+ */
 public class Search {
+  /**
+   * <code>Table</code> object. This is the "rainbow table".
+   * @see Table
+   */
   private Table rbt;
 
+  /**
+   * Constructs a <code>Search</code> object that works against the provided rainbow table.
+   * @see Table
+   * @param rbt Rainbow table, as represented by 'Table' object
+   */
   Search(Table rbt) {
     this.rbt = rbt;
   }
 
-  // Take hash from user, search the table
+  /**
+   * Presents user with prompt that accepts hashes from user in 40-character hex form.
+   * For each provided hash and attempt is made to find the corresponding plain-text key.
+   */
   public void hashUserInterface() {
     String inputHash; // Hold user input hash
     Scanner sc = new Scanner(System.in); // Take user input
@@ -29,7 +48,11 @@ public class Search {
     } while (!inputHash.equals("q"));
   }
 
-  // Attempt to find hash provided from user
+  /**
+   * Attempt to find plain-text key that corresponds to hash provided by user.
+   * @param searchHash 40-character hex-form hash
+   * @return The plain-text key, or blank if not found
+   */
   protected String keyFromHash(String searchHash) {
     byte[] curHash = null; // Hash being examined
 

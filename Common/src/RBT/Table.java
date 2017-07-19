@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,8 +19,8 @@ public class Table {
   final static boolean DEBUG = true;
 
   // Rainbow table chains to be populated
-  protected Map<String, String> keyToHash = new TreeMap<String, String>();
-  protected Map<String, String> hashToKey = new TreeMap<String, String>();
+  protected Map<String, byte[]> keyToHash = new TreeMap<>();
+  protected Map<byte[], String> hashToKey = new TreeMap<>(new ByteArrayComparator());
 
 //  public static final Character[] ALLOWABLE_CHARS = {
 //      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -97,7 +98,21 @@ public class Table {
     return result;
   }
 
-  protected static String createShaHash(String plaintext) {
+  protected static byte[] hexStringToByteArray(String s) {
+    byte[] result = new byte[(s.length()/2)];
+    int front = 0;
+    int back = 2;
+    for(int i = 0; i < (s.length()/2); i++) {
+      String hex = s.substring(front, back);
+      result[i] = (byte)Integer.parseInt(hex, 16);
+      front = back;
+      back += 2;
+    }
+
+    return result;
+  }
+
+  protected static byte[] createShaHash(String plaintext) {
     MessageDigest shaHash = null;
     try {
       shaHash = MessageDigest.getInstance("SHA-1");
@@ -107,7 +122,9 @@ public class Table {
     }
     shaHash.update(plaintext.getBytes());
 
-    return byteArrayToHexString(shaHash.digest());
+    return shaHash.digest();
+
+//    return byteArrayToHexString(shaHash.digest());
   }
 
   // Create a rainbow table of length 'num'
@@ -134,7 +151,7 @@ public class Table {
         prevNum = num;
       }
       String key = generateKey(); // Starting chain key
-      String hash = hashReduceStep(createShaHash(key), (chainLength - 1));
+      byte[] hash = hashReduceStep(createShaHash(key), (chainLength - 1));
 
       // If the hash already exists in hashToKey, generate a new chain
       // I believe we should only collide here if two different
@@ -154,16 +171,16 @@ public class Table {
   }
 
   // Reduce then hash, n times. Returns hash
-  protected String hashReduceStep(String initialHash, int n) {
+  protected byte[] hashReduceStep(byte[] initialHash, int n) {
     return hashReduceStep(initialHash, n, chainLength, keyLength);
   }
-  protected static String hashReduceStep(String initialHash, int n, int cl, int kl) {
+  protected static byte[] hashReduceStep(byte[] initialHash, int n, int cl, int kl) {
     if (n > cl - 1) {
       System.out.println("Trying to hash/reduce off chain");
       System.exit(-1);
     }
     int chainIndex = cl - n - 1; // Current place in the chain
-    String hash = initialHash; // Holds hash that's ultimately returned
+    byte[] hash = initialHash; // Holds hash that's ultimately returned
     for (int i = 0; i < n; i++) {
       hash = createShaHash(Table.hashReduce(hash, chainIndex, kl));
       chainIndex++;
@@ -192,10 +209,10 @@ public class Table {
   }
 
   // Hash reduction algorithm, produces different result depending on 'salt'
-  protected String hashReduce(String hash, int salt) {
+  protected String hashReduce(byte[] hash, int salt) {
     return Table.hashReduce(hash, salt, keyLength);
   }
-  protected static String hashReduce(String hash, int salt, int kl) {
+  protected static String hashReduce(byte[] hash, int salt, int kl) {
     String reducedKey = ""; // String we produce from hash
 
     // So a salt of 26 doesn't have two sets of hashReduce functions on an allowable
@@ -227,8 +244,10 @@ public class Table {
      * character appropriate for the keyspace.
      */
 
-    int chunks = hash.length() / kl; // Integer division
-    int extra = hash.length() % chunks; // Amount left over from above division
+//    int chunks = hash.length() / kl; // Integer division
+    int chunks = hash.length / kl;
+    int extra = hash.length % chunks;
+//    int extra = hash.length() % chunks; // Amount left over from above division
 
     // If the key length is too short, the chunk sizes will be very large,
     // and the conversion process of hex -> dec will overflow.
@@ -246,10 +265,15 @@ public class Table {
           strEnd = strStart + chunks;
         }
         // Add one character to 'reducedKey'
-        reducedKey += ALLOWABLE_CHARS[
-            (int)
-                ((Long.parseLong(hash.substring(strStart, strEnd), 16) + salt)
-                    % ALLOWABLE_CHARS.length)];
+//        reducedKey += ALLOWABLE_CHARS[
+//            (int)
+//                ((Long.parseLong(hash.substring(strStart, strEnd), 16) + salt)
+//                    % ALLOWABLE_CHARS.length)];
+        byte subByte = 0;
+        for(int k = strStart; k < strEnd; k++) {
+          subByte ^= hash[k];
+        }
+        reducedKey += ALLOWABLE_CHARS[((subByte&0xff) + salt) % ALLOWABLE_CHARS.length];
       }
     } catch (NumberFormatException e) {
       System.out.println("Choose a longer key length.");
@@ -290,12 +314,12 @@ public class Table {
       // Load 'keyToHash'
       int mapLength = unpacker.unpackMapHeader();
       for (int i = 0; i < mapLength; i++) {
-        keyToHash.put(unpacker.unpackString(), unpacker.unpackString());
+        keyToHash.put(unpacker.unpackString(), unpacker.readPayload(unpacker.unpackBinaryHeader()));
       }
       // Load 'hashToKey'
       mapLength = unpacker.unpackMapHeader();
       for (int i = 0; i < mapLength; i++) {
-        hashToKey.put(unpacker.unpackString(), unpacker.unpackString());
+        hashToKey.put(unpacker.readPayload(unpacker.unpackBinaryHeader()), unpacker.unpackString());
       }
     } catch (IOException e) {
       // The file doesn't exist
@@ -311,14 +335,16 @@ public class Table {
 
       // keyToHash
       packer.packMapHeader(keyToHash.size());
-      for (Map.Entry<String, String> entry : keyToHash.entrySet()) {
+      for (Map.Entry<String, byte[]> entry : keyToHash.entrySet()) {
         packer.packString(entry.getKey());
-        packer.packString(entry.getValue());
+        packer.packBinaryHeader(entry.getValue().length);
+        packer.writePayload(entry.getValue());
       }
       // hashToKey
       packer.packMapHeader(hashToKey.size());
-      for (Map.Entry<String, String> entry : hashToKey.entrySet()) {
-        packer.packString(entry.getKey());
+      for (Map.Entry<byte[], String> entry : hashToKey.entrySet()) {
+        packer.packBinaryHeader(entry.getKey().length);
+        packer.writePayload(entry.getKey());
         packer.packString(entry.getValue());
       }
       packer.close();
@@ -327,5 +353,24 @@ public class Table {
       System.out.println("Error writing to disk.");
       e.printStackTrace();
     }
+  }
+}
+
+// Credit to: https://stackoverflow.com/a/38552674/3846437
+class ByteArrayComparator implements Comparator<byte[]> {
+  @Override
+  public int compare(byte[] o1, byte[] o2) {
+    int result = 0;
+    int maxLength = Math.max(o1.length, o2.length);
+    for (int index = 0; index < maxLength; index++) {
+      byte o1Value = index < o1.length ? o1[index] : 0;
+      byte o2Value = index < o2.length ? o2[index] : 0;
+      int cmp     = Byte.compare(o1Value, o2Value);
+      if (cmp != 0) {
+        result = cmp;
+        break;
+      }
+    }
+    return result;
   }
 }

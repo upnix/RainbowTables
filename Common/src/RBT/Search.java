@@ -1,5 +1,6 @@
 package RBT;
 
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Search {
@@ -30,16 +31,17 @@ public class Search {
 
   // Attempt to find hash provided from user
   protected String keyFromHash(String searchHash) {
-    String curHash = ""; // Hash being examined
+    byte[] curHash = null; // Hash being examined
 
     // Loop through each position in the chain
+    byte[] searchHash_bytes = Table.hexStringToByteArray(searchHash);
     for (int i = 0; i < rbt.chainLength; i++) {
-      curHash = rbt.hashReduceStep(searchHash, i);
+      curHash = rbt.hashReduceStep(searchHash_bytes, i);
       if (rbt.hashToKey.containsKey(curHash)) {
         // Double check head of the chain leads to the desired hash
         String chainHeadKey = rbt.hashToKey.get(curHash);
         String targetKey = rbt.keyHashStep(chainHeadKey, (rbt.chainLength - i - 1));
-        if (Table.createShaHash(targetKey).equals(searchHash)) {
+        if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
           return targetKey;
         }
       }

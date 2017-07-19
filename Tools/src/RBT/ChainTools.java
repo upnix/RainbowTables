@@ -36,12 +36,12 @@ public class ChainTools {
   }
 
   static void createChainFromKey(String key, int chain_len, int key_len) {
-    String hash = Table.createShaHash(key);
-    System.out.println(key + ":" + hash);
+    byte[] hash = Table.createShaHash(key);
+    System.out.println(key + ":" + Table.byteArrayToHexString(hash));
     for(int i = 0; i < (chain_len-1); i++) {
       key = Table.hashReduce(hash, i, key_len);
       hash = Table.createShaHash(key);
-      System.out.println(key + ":" + hash);
+      System.out.println(key + ":" + Table.byteArrayToHexString(hash));
     }
   }
 

@@ -15,7 +15,7 @@ public class Config {
   // Configuration defaults
   public static final String DEFAULT_KEY_LEN = "5";
   public static final String DEFAULT_CHAIN_LEN = "10";
-  public static final String DEFAULT_TBL_LEN = "1000";
+  public static final String DEFAULT_TBL_LEN = "10000";
   private Map<String,String> cmdArgs; // Map of CLI flags and corresponding arguments
 
   // Given only 'args', use a new 'Options' to retrieve flags and options

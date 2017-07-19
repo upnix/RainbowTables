@@ -36,9 +36,9 @@ public class Main {
   public static void main(String[] args) {
     // For debugging
     String[] debug_args = {
-        "--key-length", "5",
-        "--chain-length", "228",
-        "--table-length", "52069"};
+        "--key-length", "3",
+        "--chain-length", "10",
+        "--table-length", "4600"};
     if(DEBUG) {
       args = debug_args;
     }

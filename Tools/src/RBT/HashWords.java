@@ -7,7 +7,12 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 public class HashWords {
 
@@ -62,7 +67,7 @@ public class HashWords {
     if(cmd.getArgs().length > 0) {
       String strToHash = Arrays.stream(cmd.getArgs()).collect(Collectors.joining(" "));
       System.out.println("Input: " + strToHash);
-      System.out.println("Output: " + Table.createShaHash(strToHash));
+      System.out.println("Output: " + Table.byteArrayToHexString(Table.createShaHash(strToHash)));
       System.exit(0);
     }
 
@@ -90,6 +95,7 @@ public class HashWords {
         // Write hashes to file
         Files.lines(inputFile.toPath()).
             map(Table::createShaHash).
+            map(Table::byteArrayToHexString).
             forEach(h -> safeBufferedWrite(outputWriter, h + "\n"));
         outputWriter.close();
       } catch (Exception e) {
@@ -102,33 +108,8 @@ public class HashWords {
       // Write to stdout
       Files.lines(inputFile.toPath()).
           map(Table::createShaHash).
+          map(Table::byteArrayToHexString).
           forEach(System.out::println);
     }
-
-
-    // Open the output file
-//    Writer writer = null;
-//    if(outputFile != null) {
-//       writer = new BufferedWriter(new OutputStreamWriter(
-//          new FileOutputStream(outputFile), "utf-8"));
-////      Writer writer = new BufferedWriter(new FileWriter(outputFile));
-//    }
-
-
-
-    // Take a line from 'inputFile', hash, and print output
-
-
-
-
-
-//    // Open the input file, and write
-//    try (BufferedReader br = new BufferedReader(new FileReader(input_file))) {
-//      String line;
-//      while((line = br.readLine()) != null) {
-//        writer.write(Table.createShaHash(line) + "\n");
-//      }
-//      writer.close();
-//    }
   }
 }

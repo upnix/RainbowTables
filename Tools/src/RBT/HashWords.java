@@ -24,14 +24,13 @@ import org.apache.commons.cli.Options;
  * @author Chris Cameron
  */
 public class HashWords {
-
   /**
    * Generates a <code>CommandLine</code> object, given CLI arguments passed by user.
    * @see CommandLine
    * @param args CLI arguments from main(String[]) method
    * @return Parsed CLI arguments in the form of a 'CommandLine' object
    */
-  private static CommandLine parseArguments(String[] args) {
+  protected static CommandLine parseArguments(String[] args) {
     Options options = new Options();
 
     options.addOption(
@@ -74,7 +73,7 @@ public class HashWords {
    * @param bw BufferedWriter
    * @param s Hash in 40-character hex form to be written
    */
-  private static void safeBufferedWrite(BufferedWriter bw, String s) {
+  protected static void safeBufferedWrite(BufferedWriter bw, String s) {
     try {
       bw.write(s);
     } catch(Exception e) {
@@ -88,12 +87,12 @@ public class HashWords {
    * @throws IOException Unable to create supplied output file
    */
   public static void main(String[] args) throws IOException {
-
     CommandLine cmd = parseArguments(args);
 
     // If a string was given on CLI, hash, print, exit
     if(cmd.getArgs().length > 0) {
-      String strToHash = Arrays.stream(cmd.getArgs()).collect(Collectors.joining(" "));
+      String strToHash = Arrays.stream(cmd.getArgs()).
+          collect(Collectors.joining(" "));
       System.out.println("Input: " + strToHash);
       System.out.println("Output: " + Table.byteArrayToHexString(Table.createShaHash(strToHash)));
       System.exit(0);

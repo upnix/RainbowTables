@@ -22,7 +22,7 @@ public class Search {
    * @see Table
    * @param rbt Rainbow table, as represented by 'Table' object
    */
-  Search(Table rbt) {
+  public Search(Table rbt) {
     this.rbt = rbt;
   }
 
@@ -30,17 +30,17 @@ public class Search {
    * Presents user with prompt that accepts hashes from user in 40-character hex form.
    * For each provided hash and attempt is made to find the corresponding plain-text key.
    */
-  public void hashUserInterface() {
+  public void searchUserInterface() {
     String inputHash; // Hold user input hash
     Scanner sc = new Scanner(System.in); // Take user input
 
-    // Prompt for a hash until one provided passes 'isValidHash()'
+    // Prompt for a hash until one provided passes 'isValidHexHash()'
     do {
       System.out.print("Enter a hash to find: ");
       inputHash = sc.nextLine();
       inputHash = inputHash.toLowerCase().trim();
 
-      if(Table.isValidHash(inputHash)) {
+      if(Table.isValidHexHash(inputHash)) {
         System.out.println(keyFromHash(inputHash));
       } else if (!inputHash.equals("q")) {
         System.out.println("Inappropriate hash. Try again.\n");
@@ -49,21 +49,23 @@ public class Search {
   }
 
   /**
-   * Attempt to find plain-text key that corresponds to hash provided by user.
+   * Attempt to find plain-text key that corresponds to hash provided by user.<br>
+   * Starting from the far right (end) chain, we work our way towards the front of the chain, one
+   * step at a time, running each location in the chain through <code>hashToHashStep()</code>, and
+   * check the resulting hash for a match against <code>searchHash</code>.
    * @param searchHash 40-character hex-form hash
    * @return The plain-text key, or blank if not found
    */
   protected String keyFromHash(String searchHash) {
-    byte[] curHash = null; // Hash being examined
-
     // Loop through each position in the chain
+    byte[] curHash = null; // Hash being examined
     byte[] searchHash_bytes = Table.hexStringToByteArray(searchHash);
     for (int i = 0; i < rbt.chainLength; i++) {
-      curHash = rbt.hashReduceStep(searchHash_bytes, i);
+      curHash = rbt.hashToHashStep(searchHash_bytes, i);
       if (rbt.hashToKey.containsKey(curHash)) {
         // Double check head of the chain leads to the desired hash
         String chainHeadKey = rbt.hashToKey.get(curHash);
-        String targetKey = rbt.keyHashStep(chainHeadKey, (rbt.chainLength - i - 1));
+        String targetKey = rbt.keyToKeyStep(chainHeadKey, (rbt.chainLength - i - 1));
         if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
           return targetKey;
         }

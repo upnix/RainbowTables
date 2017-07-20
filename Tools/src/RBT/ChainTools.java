@@ -15,7 +15,7 @@ import org.apache.commons.cli.Options;
  * @author Chris Cameron
  */
 public class ChainTools {
-  private static Options buildOptions() {
+  protected static Options buildOptions() {
     Options options = new Options();
     options.addOption(
         Option.builder()
@@ -45,17 +45,17 @@ public class ChainTools {
     return options;
   }
 
-  static void createChainFromKey(String key, int chain_len, int key_len) {
+  public static void createChainFromKey(String key, int chain_len, int key_len) {
     byte[] hash = Table.createShaHash(key);
     System.out.println(key + ":" + Table.byteArrayToHexString(hash));
     for(int i = 0; i < (chain_len-1); i++) {
-      key = Table.hashReduce(hash, i, key_len);
+      key = Table.hashToKey(hash, i, key_len);
       hash = Table.createShaHash(key);
       System.out.println(key + ":" + Table.byteArrayToHexString(hash));
     }
   }
 
-  static void printKeyCollisions(String key, Config config) {
+  public static void printKeyCollisions(String key, Config config) {
 
   }
 

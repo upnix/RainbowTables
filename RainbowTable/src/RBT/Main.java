@@ -16,7 +16,7 @@ import org.apache.commons.cli.Options;
  */
 public class Main {
   /** Allows for successful execution without CLI arguments. */
-  final static boolean DEBUG = false;
+  static final boolean DEBUG = false;
 
   /** Used for clearing the terminal screen. */
   private static final String ANSI_CLS = "\u001b[2J";
@@ -52,9 +52,9 @@ public class Main {
   public static void main(String[] args) {
     // For debugging
     String[] debug_args = {
-        "--key-length", "3",
+        "--key-length", "5",
         "--chain-length", "10",
-        "--table-length", "4600"};
+        "--table-length", "6000000"};
     if(DEBUG) {
       args = debug_args;
     }
@@ -97,7 +97,7 @@ public class Main {
           found, hashes.size(), ((float)found/hashes.size())*100);
     } else {
       // Allow user to search
-      rbt_search.hashUserInterface();
+      rbt_search.searchUserInterface();
     }
   }
 }

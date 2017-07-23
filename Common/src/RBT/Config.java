@@ -24,7 +24,7 @@ public class Config {
   public static final String DEFAULT_KEY_LEN = "5";
   /** Default chain length */
   public static final String DEFAULT_CHAIN_LEN = "10";
-  /** Default number of rows */
+  /** Default total number of rows to compute */
   public static final String DEFAULT_ROW_COUNT = "10000";
   /** Default number of tables */
   public static final String DEFAULT_TBL_COUNT = "1";

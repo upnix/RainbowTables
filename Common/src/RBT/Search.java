@@ -27,8 +27,8 @@ public class Search {
   }
 
   /**
-   * Presents user with prompt that accepts hashes from user in 40-character hex form.
-   * For each provided hash and attempt is made to find the corresponding plain-text key.
+   * Presents user with prompt that accepts hashes in 40-character hex form.
+   * For each provided hash an attempt is made to find the corresponding plain-text key.
    */
   public void searchUserInterface() {
     String inputHash; // Hold user input hash

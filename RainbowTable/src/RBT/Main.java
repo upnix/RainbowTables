@@ -15,7 +15,10 @@ import org.apache.commons.cli.Options;
  * @author Chris Cameron
  */
 public class Main {
-  /** Allows for successful execution without CLI arguments. */
+  /**
+   * Allows for successful execution without CLI arguments. "DEBUG" status does not extend
+   * beyond <code>Main</code>
+   * */
   static final boolean DEBUG = false;
 
   /** Used for clearing the terminal screen. */

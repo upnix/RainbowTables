@@ -62,17 +62,22 @@ public class Search {
     // Loop through each position in the chain
     byte[] curHash = null; // Hash being examined
     byte[] searchHash_bytes = Table.hexStringToByteArray(searchHash);
-    for (int i = 0; i < rbt.chainLength; i++) {
-      curHash = rbt.hashToHashStep(searchHash_bytes, i);
-      if (rbt.hashToKey.containsKey(curHash)) {
-        // Double check head of the chain leads to the desired hash
-        String chainHeadKey = rbt.hashToKey.get(curHash);
-        String targetKey = rbt.keyToKeyStep(chainHeadKey, (rbt.chainLength - i - 1));
-        if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
-          return targetKey;
+
+    for(int i = 0; i < rbt.keyToHashMap.length; i++) {
+      for (int j = 0; j < rbt.chainLength; j++) {
+        curHash = rbt.hashToHashStep(searchHash_bytes, j);
+        if (rbt.hashToKeyMap[i].containsKey(curHash)) {
+          // Double check head of the chain leads to the desired hash
+          String chainHeadKey = (String)rbt.hashToKeyMap[i].get(curHash);
+          String targetKey = rbt.keyToKeyStep(chainHeadKey, (rbt.chainLength - j - 1));
+          if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
+            System.out.println("Key found in table: " + i);
+            return targetKey;
+          }
         }
       }
     }
+
 
     // Not found
     return "";

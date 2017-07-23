@@ -53,8 +53,8 @@ public class Main {
     // For debugging
     String[] debug_args = {
         "--key-length", "3",
-        "--chain-length", "10",
-        "--table-length", "10000"};
+        "--chain-length", "175",
+        "--table-length", "200"};
     if(DEBUG) {
       args = debug_args;
     }

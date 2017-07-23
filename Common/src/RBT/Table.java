@@ -1,8 +1,5 @@
 package RBT;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -38,13 +35,17 @@ public class Table {
 //      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
 //      't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
 //  };
-
     public static final Character[] ALLOWABLE_CHARS = {
       'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
       't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-      'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
-      '5', '6', '7', '8', '9'
+      'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
   };
+//    public static final Character[] ALLOWABLE_CHARS = {
+//      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+//      't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+//      'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
+//      '5', '6', '7', '8', '9'
+//  };
   //  public static final Character[] ALLOWABLE_CHARS = {
 //      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
 //      't', 'u', 'v', 'w', 'x', 'y', 'z'
@@ -55,12 +56,12 @@ public class Table {
    * <code>TreeMap</code> of plain-text keys to hashes in <code>byte[]</code> form.
    * @see java.util.TreeMap
    */
-  Map<String, byte[]> keyToHash = new TreeMap<>();
+  Map[] keyToHashMap;
   /**
    * <code>TreeMap</code> of hashes in <code>byte[]</code> form to plain-text keys.
    * @see java.util.TreeMap
    */
-  Map<byte[], String> hashToKey = new TreeMap<>(new ByteArrayComparator());
+  Map[] hashToKeyMap;
 
   /** Simple name for a default parameter from <code>Config</code> object. */
   int keyLength;
@@ -92,6 +93,10 @@ public class Table {
    * @param cfg Configuration parameters
    */
   Table(Config cfg) {
+    keyToHashMap = new Map[]{new TreeMap<String, byte[]>(), new TreeMap<String, byte[]>()};
+    hashToKeyMap = new Map[]{new TreeMap<byte[], String>(new ByteArrayComparator()),
+        new TreeMap<byte[], String>(new ByteArrayComparator())};
+
     keyLength = cfg.getKeyLen();
     chainLength = cfg.getChainLen();
     tableLength = cfg.getTblLen();
@@ -110,14 +115,14 @@ public class Table {
     fileName = "RT_" + cfgString.hashCode() + ".ser";
 
     // Load the rainbow table represented by 'cfgString', if it exists, otherwise compute it.
-    if (existsTableFile()) {
-      readTableFile();
-    } else {
+//    if (existsTableFile()) {
+//      readTableFile();
+//    } else {
       // Create and load table
       generateTable(tableLength);
       // Put new table on disk for next time
-      writeTableFile();
-    }
+//      writeTableFile();
+//    }
   }
 
   // PROTECTED, STATIC
@@ -184,7 +189,7 @@ public class Table {
    * So, consider steps ('n') to be counted <b><i>from the right side of the chain</i></b>.<p>
    * For example, with a chain of - K1:H1:K2:H2:K3:H3:...:K10:H10
    * n = 3 would be three in from the right.
-   * This places 'plaintext' as the position of hashToKey(hash, 6, 5), or the 7th chain from
+   * This places 'plaintext' as the position of hashToKeyMap(hash, 6, 5), or the 7th chain from
    * the left in a chain of length 10.
    * salt = 10 - 3 - 1 = 6</p>
    * @param initialHash Starting hash value
@@ -205,7 +210,7 @@ public class Table {
     }
     int salt = cl - n - 1; // Appropriate salt for present chain location
     byte[] hash = initialHash; // Holds hash that's ultimately returned
-    // Reduce (hashToKey) then hash (createShaHash) 'n' times
+    // Reduce (hashToKeyMap) then hash (createShaHash) 'n' times
     for (int i = 0; i < n; i++) {
       hash = createShaHash(Table.hashToKey(hash, salt, kl));
       salt++;
@@ -317,7 +322,7 @@ public class Table {
       System.exit(-1);
     }
     String key = initialKey; // Key that's ultimately returned
-    // Hash (createShaHash) then reduce (hashToKey) 'n' times
+    // Hash (createShaHash) then reduce (hashToKeyMap) 'n' times
     for (int i = 0; i < n; i++) {
       key = Table.hashToKey(createShaHash(key), i, kl);
     }
@@ -330,7 +335,7 @@ public class Table {
   public void printSummary() {
     System.out.println("Rainbow table loaded with the following parameters:");
     System.out.println("  Configured -");
-    System.out.printf("    * %13s: %,d%n", "Table length", hashToKey.size());
+    System.out.printf("    * %13s: %,d%n", "Table length", hashToKeyMap[0].size());
     System.out.printf("    * %13s: %,d%n", "Chain length", chainLength);
     System.out.printf("    * %13s: %,d%n", "Key length", keyLength);
     System.out.println();
@@ -378,18 +383,24 @@ public class Table {
       // Hash from the end of a chain that starts with 'key'
       byte[] hash = hashToHashStep(createShaHash(key), (chainLength - 1));
 
-      // If the hash already exists in hashToKey, generate a new chain
+      // If the hash already exists in hashToKeyMap, generate a new chain
       // I believe we should only collide here if two different
       // starting keys end up generating the same end hash.
-      if(hashToKey.containsKey(hash)) {
-//        System.out.println("Collision - " + hashToKey.get(hash) + ":" + hash +
-//            " and " + key + ":" + hash);
-        totalCollisions++;
-      } else {
-        // Insert new chain in table
-        keyToHash.put(key, hash);
-        hashToKey.put(hash, key);
-        num--;
+      for (int i = 0; i < hashToKeyMap.length; i++) {
+        if (!hashToKeyMap[i].containsKey(hash)) {
+          // Insert new chain in table
+          keyToHashMap[i].put(key, hash);
+          hashToKeyMap[i].put(hash, key);
+          num--;
+          break;
+        } else {
+          if(i == 1) {
+//            System.out.println("Collision on table " + i);
+            if(DEBUG) {
+              totalCollisions++;
+            }
+          }
+        }
       }
     }
 
@@ -428,14 +439,23 @@ public class Table {
 
     // Loop on the key building process until a key in generated that doesn't
     // match an existing key.
+    boolean exists = false;
     do {
       builtString = "";
       for (int i = 0; i < keyLength; i++) {
         builtString +=
             ALLOWABLE_CHARS[ThreadLocalRandom.current().nextInt(0, ALLOWABLE_CHARS.length)];
       }
+      for(int i = 0; i < keyToHashMap.length; i++) {
+        if(keyToHashMap[i].containsKey(builtString)) {
+          exists = true;
+        } else {
+          exists = false;
+          break;
+        }
+      }
 
-    } while (keyToHash.containsKey(builtString));
+    } while (exists);
 
     return builtString;
   }
@@ -471,55 +491,55 @@ public class Table {
    * @return Success or failure
    */
   private boolean readTableFile() {
-    try {
-      MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new FileInputStream(fileName));
-      // Load 'keyToHash'
-      int mapLength = unpacker.unpackMapHeader();
-      for (int i = 0; i < mapLength; i++) {
-        keyToHash.put(unpacker.unpackString(), unpacker.readPayload(unpacker.unpackBinaryHeader()));
-      }
-      // Load 'hashToKey'
-      mapLength = unpacker.unpackMapHeader();
-      for (int i = 0; i < mapLength; i++) {
-        hashToKey.put(unpacker.readPayload(unpacker.unpackBinaryHeader()), unpacker.unpackString());
-      }
-      unpacker.close();
-    } catch (IOException e) {
-      // The file doesn't exist
-      return false;
-    }
+//    try {
+//      MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new FileInputStream(fileName));
+//      // Load 'keyToHashMap'
+//      int mapLength = unpacker.unpackMapHeader();
+//      for (int i = 0; i < mapLength; i++) {
+//        keyToHashMap.put(unpacker.unpackString(), unpacker.readPayload(unpacker.unpackBinaryHeader()));
+//      }
+//      // Load 'hashToKeyMap'
+//      mapLength = unpacker.unpackMapHeader();
+//      for (int i = 0; i < mapLength; i++) {
+//        hashToKeyMap.put(unpacker.readPayload(unpacker.unpackBinaryHeader()), unpacker.unpackString());
+//      }
+//      unpacker.close();
+//    } catch (IOException e) {
+//      // The file doesn't exist
+//      return false;
+//    }
     return true;
   }
 
   /**
-   * Serialize rainbow table represented by 'hashToKey' and 'keyToHash', write to disk.
+   * Serialize rainbow table represented by 'hashToKeyMap' and 'keyToHashMap', write to disk.
    * @see MessagePack
    * @see MessagePacker
    */
   private void writeTableFile() {
-    try {
-      MessagePacker packer = MessagePack.newDefaultPacker(new FileOutputStream(fileName));
-
-      // keyToHash
-      packer.packMapHeader(keyToHash.size());
-      for (Map.Entry<String, byte[]> entry : keyToHash.entrySet()) {
-        packer.packString(entry.getKey());
-        packer.packBinaryHeader(entry.getValue().length);
-        packer.writePayload(entry.getValue());
-      }
-      // hashToKey
-      packer.packMapHeader(hashToKey.size());
-      for (Map.Entry<byte[], String> entry : hashToKey.entrySet()) {
-        packer.packBinaryHeader(entry.getKey().length);
-        packer.writePayload(entry.getKey());
-        packer.packString(entry.getValue());
-      }
-      packer.close();
-    } catch (Exception e) {
-      // We can continue, but their table is lost after program termination
-      System.out.println("Error writing to disk.");
-      e.printStackTrace();
-    }
+//    try {
+//      MessagePacker packer = MessagePack.newDefaultPacker(new FileOutputStream(fileName));
+//
+//      // keyToHashMap
+//      packer.packMapHeader(keyToHashMap.size());
+//      for (Map.Entry<String, byte[]> entry : keyToHashMap.entrySet()) {
+//        packer.packString(entry.getKey());
+//        packer.packBinaryHeader(entry.getValue().length);
+//        packer.writePayload(entry.getValue());
+//      }
+//      // hashToKeyMap
+//      packer.packMapHeader(hashToKeyMap.size());
+//      for (Map.Entry<byte[], String> entry : hashToKeyMap.entrySet()) {
+//        packer.packBinaryHeader(entry.getKey().length);
+//        packer.writePayload(entry.getKey());
+//        packer.packString(entry.getValue());
+//      }
+//      packer.close();
+//    } catch (Exception e) {
+//      // We can continue, but their table is lost after program termination
+//      System.out.println("Error writing to disk.");
+//      e.printStackTrace();
+//    }
   }
 
   /**

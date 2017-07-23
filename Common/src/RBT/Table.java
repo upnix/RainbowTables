@@ -1,10 +1,15 @@
 package RBT;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -53,15 +58,17 @@ public class Table {
 
   // Rainbow table chains to be populated
   /**
-   * <code>TreeMap</code> of plain-text keys to hashes in <code>byte[]</code> form.
+   * List of <code>TreeMap</code>'s that contain plain-text keys to hashes in
+   * <code>byte[]</code> form.
    * @see java.util.TreeMap
    */
-  Map[] keyToHashMap;
+  List<TreeMap<String, byte[]>> keyToHashMap = new LinkedList<>();
   /**
-   * <code>TreeMap</code> of hashes in <code>byte[]</code> form to plain-text keys.
+   * List of <code>TreeMap</code>'s that contain hashes in <code>byte[]</code> form to
+   * plain-text keys.
    * @see java.util.TreeMap
    */
-  Map[] hashToKeyMap;
+  List<TreeMap<byte[], String>> hashToKeyMap = new LinkedList<>();
 
   /** Simple name for a default parameter from <code>Config</code> object. */
   int keyLength;
@@ -93,9 +100,11 @@ public class Table {
    * @param cfg Configuration parameters
    */
   Table(Config cfg) {
-    keyToHashMap = new Map[]{new TreeMap<String, byte[]>(), new TreeMap<String, byte[]>()};
-    hashToKeyMap = new Map[]{new TreeMap<byte[], String>(new ByteArrayComparator()),
-        new TreeMap<byte[], String>(new ByteArrayComparator())};
+    keyToHashMap.add(new TreeMap<>());
+    keyToHashMap.add(new TreeMap<>());
+
+    hashToKeyMap.add(new TreeMap<>(new ByteArrayComparator()));
+    hashToKeyMap.add(new TreeMap<>(new ByteArrayComparator()));
 
     keyLength = cfg.getKeyLen();
     chainLength = cfg.getChainLen();
@@ -115,14 +124,14 @@ public class Table {
     fileName = "RT_" + cfgString.hashCode() + ".ser";
 
     // Load the rainbow table represented by 'cfgString', if it exists, otherwise compute it.
-//    if (existsTableFile()) {
-//      readTableFile();
-//    } else {
+    if (existsTableFile()) {
+      readTableFile();
+    } else {
       // Create and load table
       generateTable(tableLength);
       // Put new table on disk for next time
-//      writeTableFile();
-//    }
+      writeTableFile();
+    }
   }
 
   // PROTECTED, STATIC
@@ -170,13 +179,6 @@ public class Table {
    * @return byte[] of length 20
    */
   protected static byte[] createShaHash(String plaintext) {
-//    MessageDigest shaHash = null;
-//    try {
-//      shaHash = MessageDigest.getInstance("SHA-1");
-//    } catch (Exception e) {
-//      System.out.println(e);
-//      System.exit(-1);
-//    }
     shaHash.update(plaintext.getBytes());
 
     return shaHash.digest();
@@ -322,7 +324,7 @@ public class Table {
       System.exit(-1);
     }
     String key = initialKey; // Key that's ultimately returned
-    // Hash (createShaHash) then reduce (hashToKeyMap) 'n' times
+    // Hash (createShaHash) then reduce (hashToKey) 'n' times
     for (int i = 0; i < n; i++) {
       key = Table.hashToKey(createShaHash(key), i, kl);
     }
@@ -335,7 +337,8 @@ public class Table {
   public void printSummary() {
     System.out.println("Rainbow table loaded with the following parameters:");
     System.out.println("  Configured -");
-    System.out.printf("    * %13s: %,d%n", "Table length", hashToKeyMap[0].size());
+    // FIXME
+//    System.out.printf("    * %13s: %,d%n", "Table length", hashToKeyMap[0].size());
     System.out.printf("    * %13s: %,d%n", "Chain length", chainLength);
     System.out.printf("    * %13s: %,d%n", "Key length", keyLength);
     System.out.println();
@@ -386,11 +389,11 @@ public class Table {
       // If the hash already exists in hashToKeyMap, generate a new chain
       // I believe we should only collide here if two different
       // starting keys end up generating the same end hash.
-      for (int i = 0; i < hashToKeyMap.length; i++) {
-        if (!hashToKeyMap[i].containsKey(hash)) {
+      for (int i = 0; i < hashToKeyMap.size(); i++) {
+        if (!hashToKeyMap.get(i).containsKey(hash)) {
           // Insert new chain in table
-          keyToHashMap[i].put(key, hash);
-          hashToKeyMap[i].put(hash, key);
+          keyToHashMap.get(i).put(key, hash);
+          hashToKeyMap.get(i).put(hash, key);
           num--;
           break;
         } else {
@@ -446,8 +449,8 @@ public class Table {
         builtString +=
             ALLOWABLE_CHARS[ThreadLocalRandom.current().nextInt(0, ALLOWABLE_CHARS.length)];
       }
-      for(int i = 0; i < keyToHashMap.length; i++) {
-        if(keyToHashMap[i].containsKey(builtString)) {
+      for(int i = 0; i < keyToHashMap.size(); i++) {
+        if(keyToHashMap.get(i).containsKey(builtString)) {
           exists = true;
         } else {
           exists = false;
@@ -485,61 +488,64 @@ public class Table {
     return Files.exists(Paths.get(fileName));
   }
   /**
-   * Read in previously computed hash map that matches supplied <code>Config</code> object,
-   * if it exists.
+   * Read in previously computed tables that match supplied <code>Config</code> object,
+   * if it exists. <code>keyToHashMap</code> is read from file, <code>hashToKeyMap</code> is
+   * constructed.
    * @see MessageUnpacker
    * @return Success or failure
    */
   private boolean readTableFile() {
-//    try {
-//      MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new FileInputStream(fileName));
-//      // Load 'keyToHashMap'
-//      int mapLength = unpacker.unpackMapHeader();
-//      for (int i = 0; i < mapLength; i++) {
-//        keyToHashMap.put(unpacker.unpackString(), unpacker.readPayload(unpacker.unpackBinaryHeader()));
-//      }
-//      // Load 'hashToKeyMap'
-//      mapLength = unpacker.unpackMapHeader();
-//      for (int i = 0; i < mapLength; i++) {
-//        hashToKeyMap.put(unpacker.readPayload(unpacker.unpackBinaryHeader()), unpacker.unpackString());
-//      }
-//      unpacker.close();
-//    } catch (IOException e) {
-//      // The file doesn't exist
-//      return false;
-//    }
+    try {
+      MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(new FileInputStream(fileName));
+      // Load 'keyToHashMap', construct 'hashToKeyMap'
+      int rbTables = unpacker.unpackArrayHeader(); // # of rainbow tables held
+      for(int i = 0; i < rbTables; i++) {
+        // Load the particular table
+        int mapLength = unpacker.unpackMapHeader();
+        for (int j = 0; j < mapLength; j++) {
+          String key = unpacker.unpackString();
+          byte[] hash = unpacker.readPayload(unpacker.unpackBinaryHeader());
+          // Both maps hold the same data. Together they form a bidirectional map
+          keyToHashMap.get(i).put(key, hash);
+          hashToKeyMap.get(i).put(hash, key);
+        }
+      }
+      unpacker.close();
+    } catch (IOException e) {
+      // The file doesn't exist
+      return false;
+    }
     return true;
   }
 
   /**
-   * Serialize rainbow table represented by 'hashToKeyMap' and 'keyToHashMap', write to disk.
+   * Serialize rainbow table(s) contained in 'keyToHashMap', write to disk. 'hashToKeyMap' comes
+   * for free, as it can be reconstructed from 'keyToHashMap'.
    * @see MessagePack
    * @see MessagePacker
    */
   private void writeTableFile() {
-//    try {
-//      MessagePacker packer = MessagePack.newDefaultPacker(new FileOutputStream(fileName));
-//
-//      // keyToHashMap
-//      packer.packMapHeader(keyToHashMap.size());
-//      for (Map.Entry<String, byte[]> entry : keyToHashMap.entrySet()) {
-//        packer.packString(entry.getKey());
-//        packer.packBinaryHeader(entry.getValue().length);
-//        packer.writePayload(entry.getValue());
-//      }
-//      // hashToKeyMap
-//      packer.packMapHeader(hashToKeyMap.size());
-//      for (Map.Entry<byte[], String> entry : hashToKeyMap.entrySet()) {
-//        packer.packBinaryHeader(entry.getKey().length);
-//        packer.writePayload(entry.getKey());
-//        packer.packString(entry.getValue());
-//      }
-//      packer.close();
-//    } catch (Exception e) {
-//      // We can continue, but their table is lost after program termination
-//      System.out.println("Error writing to disk.");
-//      e.printStackTrace();
-//    }
+    try {
+      MessagePacker packer = MessagePack.newDefaultPacker(new FileOutputStream(fileName));
+
+      // Write keyToHashMap
+      packer.packArrayHeader(keyToHashMap.size());
+      // For each rainbow table held...
+      for(int i = 0; i < keyToHashMap.size(); i++) {
+        // Store this particular table
+        packer.packMapHeader(keyToHashMap.get(i).size());
+        for (Map.Entry<String, byte[]> entry : keyToHashMap.get(i).entrySet()) {
+          packer.packString(entry.getKey());
+          packer.packBinaryHeader(entry.getValue().length);
+          packer.writePayload(entry.getValue());
+        }
+      }
+      packer.close();
+    } catch (Exception e) {
+      // We can continue, but their table is lost after program termination
+      System.out.println("Error writing to disk.");
+      e.printStackTrace();
+    }
   }
 
   /**

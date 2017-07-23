@@ -52,9 +52,9 @@ public class Main {
   public static void main(String[] args) {
     // For debugging
     String[] debug_args = {
-        "--key-length", "3",
-        "--chain-length", "175",
-        "--table-length", "200"};
+        "--key-length", "4",
+        "--chain-length", "10",
+        "--table-length", "1000000"};
     if(DEBUG) {
       args = debug_args;
     }

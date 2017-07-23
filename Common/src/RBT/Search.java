@@ -62,8 +62,15 @@ public class Search {
     // Loop through each position in the chain
     byte[] curHash = null; // Hash being examined
     byte[] searchHash_bytes = Table.hexStringToByteArray(searchHash);
-    // CHRIS
-    for(int i = 0; i < rbt.keyToHashMap.size(); i++) {
+
+    // We can either step through the chain, and search each rainbow table, or search each
+    // rainbow table, stepping through the chain for each. Stepping through the chain only once
+    // has the advantage of only having to reduce/hash chainLength times. It's possible though
+    // that by searching each table for each link in the chain, we continually are pushing
+    // tables out of the cache (if that's even an issue).
+    // Pick a table...
+    for(int i = 0; i < rbt.tableCount; i++) {
+      // Run through the chain...
       for (int j = 0; j < rbt.chainLength; j++) {
         curHash = rbt.hashToHashStep(searchHash_bytes, j);
         if (rbt.hashToKeyMap.get(i).containsKey(curHash)) {
@@ -71,13 +78,11 @@ public class Search {
           String chainHeadKey = rbt.hashToKeyMap.get(i).get(curHash);
           String targetKey = rbt.keyToKeyStep(chainHeadKey, (rbt.chainLength - j - 1));
           if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
-            System.out.println("Key found in table: " + i);
             return targetKey;
           }
         }
       }
     }
-
 
     // Not found
     return "";

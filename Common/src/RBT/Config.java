@@ -24,8 +24,10 @@ public class Config {
   public static final String DEFAULT_KEY_LEN = "5";
   /** Default chain length */
   public static final String DEFAULT_CHAIN_LEN = "10";
-  /** Default table length */
-  public static final String DEFAULT_TBL_LEN = "10000";
+  /** Default number of rows */
+  public static final String DEFAULT_ROW_COUNT = "10000";
+  /** Default number of tables */
+  public static final String DEFAULT_TBL_COUNT = "1";
 
   /** <code>Map</code> of CLI flags and corresponding arguments. */
   private final Map<String,String> cmdArgs;
@@ -97,12 +99,19 @@ public class Config {
   }
 
   /**
-   * Return length of table to be generated.
-   * @return Table length
+   * Return the number of total rows to generate.
+   * @return Total rows to generate
    */
-  public long getTblLen() {
-    return Long.decode(cmdArgs.get("table-length"));
+  public long getRowCount() {
+    return Long.decode(cmdArgs.get("row-count"));
   }
+
+  /**
+   * Return the number of tables to generate.
+   * @return Number of tables
+   */
+  public int getTblCount() { return Integer.decode(cmdArgs.get("table-count")); }
+
 
   // PROTECTED
   /**
@@ -125,8 +134,8 @@ public class Config {
     );
     options.addOption(
         Option.builder()
-            .longOpt("table-length")
-            .desc("Table length (default: " + DEFAULT_TBL_LEN + ")")
+            .longOpt("row-count")
+            .desc("Total rows to generate (default: " + DEFAULT_ROW_COUNT + ")")
             .hasArg()
             .argName("NUM")
             .required(false)
@@ -141,6 +150,16 @@ public class Config {
             .required(false)
             .build()
     );
+    options.addOption(
+        Option.builder()
+            .longOpt("table-count")
+            .desc("Number of rainbow tables generated (default: " + DEFAULT_TBL_COUNT + ")")
+            .hasArg()
+            .argName("NUM")
+            .required(false)
+            .build()
+    );
+
     options.addOption("h", "help", false, "Print this message.");
 
     return options;
@@ -183,8 +202,11 @@ public class Config {
     if(!cmdArgs.containsKey("chain-length")) {
       cmdArgs.put("chain-length", DEFAULT_CHAIN_LEN);
     }
-    if(!cmdArgs.containsKey("table-length")) {
-      cmdArgs.put("table-length", DEFAULT_TBL_LEN);
+    if(!cmdArgs.containsKey("row-count")) {
+      cmdArgs.put("row-count", DEFAULT_ROW_COUNT);
+    }
+    if(!cmdArgs.containsKey("table-count")) {
+      cmdArgs.put("table-count", DEFAULT_TBL_COUNT);
     }
 
     return cmdArgs;

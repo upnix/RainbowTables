@@ -54,7 +54,8 @@ public class Main {
     String[] debug_args = {
         "--key-length", "4",
         "--chain-length", "10",
-        "--table-length", "1000000"};
+        "--row-count", "1000000",
+        "--table-count 1"};
     if(DEBUG) {
       args = debug_args;
     }

@@ -75,7 +75,9 @@ public class Table {
   /** Simple name for a default parameter from <code>Config</code> object. */
   int chainLength;
   /** Simple name for a default parameter from <code>Config</code> object. */
-  long tableLength;
+  long rowCount;
+  /** Simple name for a default parameter from <code>Config</code> object. */
+  int tableCount;
   /**
    * A count of all possible keys, given <code>keyLength</code> and <code>ALLOWABLE_CHARS</code>.
    * @see #keyLength
@@ -100,16 +102,16 @@ public class Table {
    * @param cfg Configuration parameters
    */
   Table(Config cfg) {
-    keyToHashMap.add(new TreeMap<>());
-    keyToHashMap.add(new TreeMap<>());
-
-    hashToKeyMap.add(new TreeMap<>(new ByteArrayComparator()));
-    hashToKeyMap.add(new TreeMap<>(new ByteArrayComparator()));
-
     keyLength = cfg.getKeyLen();
     chainLength = cfg.getChainLen();
-    tableLength = cfg.getTblLen();
+    rowCount = cfg.getRowCount();
+    tableCount = cfg.getTblCount();
     keySpace = (long) Math.pow(ALLOWABLE_CHARS.length, keyLength);
+
+    for(int i = 0; i < tableCount; i++) {
+      keyToHashMap.add(new TreeMap<>());
+      hashToKeyMap.add(new TreeMap<>(new ByteArrayComparator()));
+    }
 
     /*
      * Generate the file name a previously generated rainbow table would have
@@ -120,7 +122,8 @@ public class Table {
         Arrays.deepToString(ALLOWABLE_CHARS)
             + keyLength
             + chainLength
-            + tableLength;
+            + rowCount
+            + tableCount;
     fileName = "RT_" + cfgString.hashCode() + ".ser";
 
     // Load the rainbow table represented by 'cfgString', if it exists, otherwise compute it.
@@ -128,7 +131,7 @@ public class Table {
       readTableFile();
     } else {
       // Create and load table
-      generateTable(tableLength);
+      generateTable(rowCount);
       // Put new table on disk for next time
       writeTableFile();
     }
@@ -337,8 +340,8 @@ public class Table {
   public void printSummary() {
     System.out.println("Rainbow table loaded with the following parameters:");
     System.out.println("  Configured -");
-    // FIXME
-//    System.out.printf("    * %13s: %,d%n", "Table length", hashToKeyMap[0].size());
+    System.out.printf("    * %13s: %,d%n", "Total rows", rowCount);
+    System.out.printf("    * %13s: %,d%n", "Table count", tableCount);
     System.out.printf("    * %13s: %,d%n", "Chain length", chainLength);
     System.out.printf("    * %13s: %,d%n", "Key length", keyLength);
     System.out.println();
@@ -389,15 +392,17 @@ public class Table {
       // If the hash already exists in hashToKeyMap, generate a new chain
       // I believe we should only collide here if two different
       // starting keys end up generating the same end hash.
-      for (int i = 0; i < hashToKeyMap.size(); i++) {
-        if (!hashToKeyMap.get(i).containsKey(hash)) {
+
+      for (int i = 0; i < tableCount; i++) {
+        int index = (int)((num+i)%tableCount);
+        if (!hashToKeyMap.get(index).containsKey(hash)) {
           // Insert new chain in table
-          keyToHashMap.get(i).put(key, hash);
-          hashToKeyMap.get(i).put(hash, key);
+          keyToHashMap.get(index).put(key, hash);
+          hashToKeyMap.get(index).put(hash, key);
           num--;
           break;
         } else {
-          if(i == 1) {
+          if(i == tableCount-1) {
 //            System.out.println("Collision on table " + i);
             if(DEBUG) {
               totalCollisions++;
@@ -449,7 +454,7 @@ public class Table {
         builtString +=
             ALLOWABLE_CHARS[ThreadLocalRandom.current().nextInt(0, ALLOWABLE_CHARS.length)];
       }
-      for(int i = 0; i < keyToHashMap.size(); i++) {
+      for(int i = 0; i < tableCount; i++) {
         if(keyToHashMap.get(i).containsKey(builtString)) {
           exists = true;
         } else {

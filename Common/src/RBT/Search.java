@@ -41,7 +41,9 @@ public class Search {
       inputHash = inputHash.toLowerCase().trim();
 
       if(Table.isValidHexHash(inputHash)) {
+        long searchTime = System.currentTimeMillis();
         System.out.println(keyFromHash(inputHash));
+        System.out.println((System.currentTimeMillis()-searchTime) + " milliseconds to complete.");
       } else if (!inputHash.equals("q")) {
         System.out.println("Inappropriate hash. Try again.\n");
       }

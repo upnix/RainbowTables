@@ -3,7 +3,9 @@
 # Overview
 This page describes a project I undertook while attending the [Recurse Center](https://www.recurse.com/) from May to August, 2017. I used Java to create an implementation of [rainbow tables](https://en.wikipedia.org/wiki/Rainbow_table) - a time/memory trade off that allows for the repeated searching of large password hash spaces, a task that would otherwise be intractable.  
 
-In its present state, my application can retrieve plain-text passwords from SHA-1 hashes, operating with 90%+ accuracy in key spaces of over 1 billion. At the bottom of this page I list methods by which the manageable key space size could be increased to significantly larger numbers.  
+In its present state, my application can retrieve plain-text passwords from SHA-1 hashes, operating with 90%+ accuracy in key spaces of over 1 billion. At the bottom of this page I list methods by which the manageable key space size could be increased to significantly larger numbers. 
+
+**[A 5 minute presentation I gave on rainbow tables]({{ site.url }}/assets/5-minute_part1.pdf)** 
 
 ## Challenge
  My goal in choosing this project was to become more familiar working with computationally large problems. I wished to develop a configurable application that allowed for the efficient, repeated searching of very large password key spaces - up to the limits of the host hardware. Program overhead had remain minimal, with most execution time spent on hash generation (rather than data structure operations).   

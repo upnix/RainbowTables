@@ -55,10 +55,10 @@ public class Main {
   public static void main(String[] args) {
     // For debugging
     String[] debug_args = {
-        "--key-length", "4",
-        "--chain-length", "10",
-        "--row-count", "1000000",
-        "--table-count 1"};
+        "--key-length", "5",
+        "--chain-length", "50",
+        "--row-count", "10000000",
+        "--table-count", "5"};
     if(DEBUG) {
       args = debug_args;
     }

@@ -94,7 +94,7 @@ public class HashWords {
       String strToHash = Arrays.stream(cmd.getArgs()).
           collect(Collectors.joining(" "));
       System.out.println("Input: " + strToHash);
-      System.out.println("Output: " + Table.byteArrayToHexString(Table.createShaHash(strToHash)));
+      System.out.println("Output: " + Tables.byteArrayToHexString(Tables.createShaHash(strToHash)));
       System.exit(0);
     }
 
@@ -121,8 +121,8 @@ public class HashWords {
             Paths.get(cmd.getOptionValue("output")), StandardCharsets.UTF_8);
         // Write hashes to file
         Files.lines(inputFile.toPath()).
-            map(Table::createShaHash).
-            map(Table::byteArrayToHexString).
+            map(Tables::createShaHash).
+            map(Tables::byteArrayToHexString).
             forEach(h -> safeBufferedWrite(outputWriter, h + "\n"));
         outputWriter.close();
       } catch (Exception e) {
@@ -134,8 +134,8 @@ public class HashWords {
     } else {
       // Write to stdout
       Files.lines(inputFile.toPath()).
-          map(Table::createShaHash).
-          map(Table::byteArrayToHexString).
+          map(Tables::createShaHash).
+          map(Tables::byteArrayToHexString).
           forEach(System.out::println);
     }
   }

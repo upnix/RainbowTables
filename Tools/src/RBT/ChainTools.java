@@ -45,15 +45,15 @@ public class ChainTools {
     return options;
   }
 
-  public static void createChainFromKey(String key, int chain_len, int key_len) {
-    byte[] hash = Table.createShaHash(key);
-    System.out.println(key + ":" + Table.byteArrayToHexString(hash));
-    for(int i = 0; i < (chain_len-1); i++) {
-      key = Table.hashToKey(hash, i, key_len);
-      hash = Table.createShaHash(key);
-      System.out.println(key + ":" + Table.byteArrayToHexString(hash));
-    }
-  }
+//  public static void createChainFromKey(String key, int chain_len, int key_len) {
+//    byte[] hash = Tables.createShaHash(key);
+//    System.out.println(key + ":" + Tables.byteArrayToHexString(hash));
+//    for(int i = 0; i < (chain_len-1); i++) {
+//      key = Tables.hashToKey(hash, i, key_len);
+//      hash = Table.createShaHash(key);
+//      System.out.println(key + ":" + Table.byteArrayToHexString(hash));
+//    }
+//  }
 
   public static void printKeyCollisions(String key, Config config) {
 
@@ -73,9 +73,9 @@ public class ChainTools {
     System.out.println(Arrays.toString(args));
     Config toolConfig = new Config(buildOptions(), args);
 
-    if(toolConfig.containsArg("print-chain")) {
-      createChainFromKey(toolConfig.getKey(), toolConfig.getChainLen(), toolConfig.getKeyLen());
-    }
+//    if(toolConfig.containsArg("print-chain")) {
+//      createChainFromKey(toolConfig.getKey(), toolConfig.getChainLen(), toolConfig.getKeyLen());
+//    }
 //    } else if(toolConfig.containsArg("print-collisions")) {
 //
 //    }

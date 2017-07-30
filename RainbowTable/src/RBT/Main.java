@@ -76,7 +76,7 @@ public class Main {
     rbt.printSummary();
 
     // Create a new 'Search' object
-    Search rbt_search = new Search(rbt);
+    Search rbt_search = new Search(rbt, cfg);
 
     // Have we been asked to search a supplied file?
     if(cfg.containsArg("search-file")) {

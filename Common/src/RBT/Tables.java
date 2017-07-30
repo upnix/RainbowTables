@@ -59,6 +59,25 @@ public class Tables {
   }
 
   /**
+   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form.
+   * Uses {@link java.security.MessageDigest#digest()}.
+   * @see java.security.MessageDigest#digest()
+   * @param plaintext String to hash
+   * @return byte[] of length 20
+   */
+  protected static byte[] createShaHash(String plaintext, MessageDigest shaHash) {
+//    MessageDigest shaHash = null;
+//    try {
+//      shaHash = MessageDigest.getInstance("SHA-1");
+//    } catch(Exception e) {
+//      System.exit(-1);
+//    }
+    shaHash.update(plaintext.getBytes());
+
+    return shaHash.digest();
+  }
+
+  /**
    * Reduce then hash, <code>n</code> times. Static version.<br>
    * This method takes a hash, treats it as if it were at some location on a chain, and then
    * runs it along the chain until the final position.<br>

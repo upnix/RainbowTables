@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Loads or generates a rainbow table, given expected parameters in <code>Config</code> object.
@@ -40,7 +41,8 @@ public class Table {
   /** Simple name for a default parameter from <code>Config</code> object. */
   int tableCount;
 
-  long num;
+  AtomicInteger tblN = new AtomicInteger(0);
+
   /**
    * A count of all possible keys, given <code>keyLength</code> and <code>ALLOWABLE_CHARS</code>.
    * @see #keyLength
@@ -68,7 +70,6 @@ public class Table {
     tableCount = tblcfg.getTblCount();
     allowableLength = tblcfg.ALLOWABLE_CHARS.length;
     keySpace = (long) Math.pow(allowableLength, keyLength);
-    num = rowCount;
 
     // Connect to the database
     try {
@@ -81,7 +82,7 @@ public class Table {
 
     // Check if the rainbow table we've been asked to create already exists. If not, create it.
     if (!existsRBTables()) {
-      generateTables();
+      generateTables(rowCount);
       // TODO: Better SQLException's
       try {
         conn.commit();
@@ -114,6 +115,27 @@ public class Table {
         // Assuming duplicate key, try next table.
         tblNum = (tblNum+i+1)%tableCount;
       }
+    }
+
+    return false;
+  }
+
+  protected boolean add(byte[] b, String key, int tblnum) {
+    // Choose a random starting table for attempted insert
+//    int tblNum = ThreadLocalRandom.current().nextInt(0, tableCount);
+    // Attempt insert on each table, if necessary
+//    for(int i = 0; i < tableCount; i++) {
+      String add_q = "INSERT INTO KL" + key.length() + "_" + tblnum + " VALUES(?, ?)";
+      try {
+        PreparedStatement add_ps = conn.prepareStatement(add_q);
+        add_ps.setBytes(1, b);
+        add_ps.setString(2, key);
+        add_ps.execute();
+        return true;
+      } catch(SQLException se) {
+        // Assuming duplicate key, try next table.
+//        tblNum = (tblNum+i+1)%tableCount;
+//      }
     }
 
     return false;
@@ -227,14 +249,14 @@ public class Table {
   /**
    * Create a rainbow table of length <code>num</code>.
    */
-  protected void generateTables() {
+  protected void generateTables(long num) {
     // Create the configured number ('tableCount') of DB tables
     for(int i = 0; i < tableCount; i++) {
       // Of the form: KLX_Y, where 'X' is the key length, 'Y' is the table number
       String createTbl_q = "CREATE TABLE KL" + keyLength + "_" + i + " (" +
           "hashVal CHAR(20) FOR BIT DATA PRIMARY KEY, " +
           "hashKey VARCHAR(10) NOT NULL)";
-      // TODO: Fix SQLExeption's
+      // TODO: Fix SQLException's
       try {
         conn.createStatement().execute(createTbl_q);
         conn.commit();
@@ -243,68 +265,35 @@ public class Table {
       }
     }
 
-    if(DEBUG) {
-      System.out.format("Generating table of size %,d%n", num);
-      System.out.format("%s\t%s\t%s\t%s\t%s%n",
-          "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s");
-    }
-    long startTime = currentTimeSeconds();
-    long curTime = startTime; // Time since current round was started
-    long printTime = 15; // Print every X seconds
-    int totalCollisions = 0;
-    int prevCollisions = 0; // Key collisions from the previous round
-    long prevNum = num; // 'num' from previous round
-    Runnable task = () -> {
-      int collisions = 0;
-      while(num > 0) {
-        if(collisions > 1000000) {
-          System.out.println("Uhoh!");
-        }
+    Runnable table_gen = () -> {
+      long n = rowCount/tableCount;
+      int local_tbl = tblN.getAndIncrement();
+      while(n > 0) {
         String key = generateKey(); // Starting chain key
         // Produce hash from the end of a chain of length 'chainLength' that starts with 'key'
         byte[] hash = Tables.hashToHashStep(Tables.createShaHash(key), (chainLength - 1), tblcfg);
         // Try to place the new 'key' and 'hash' in one of the available tables.
         if(add(hash, key)) {
-          num--;
-        } else {
-          collisions++;
+          n--;
         }
       }
     };
-//    while (num > 0) {
-//      // DEBUG is set and time since last round started is >= printTime
-//      if(DEBUG && ((currentTimeSeconds())-curTime) >= printTime) {
-//        // "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s"
-//        System.out.format("%d\t%d\t%d\t%d\t%d%n",
-//            currentTimeSeconds() - startTime,
-//            num,
-//            prevNum-num,
-//            totalCollisions-prevCollisions,
-//            (prevNum-num)*chainLength/(currentTimeSeconds() - curTime));
-//        curTime = currentTimeSeconds();
-//        prevCollisions = totalCollisions;
-//        prevNum = num;
-//      }
-    Thread thread1 = new Thread(task);
-    Thread thread2 = new Thread(task);
-    Thread thread3 = new Thread(task);
-    thread1.start();
-    thread2.start();
-    thread3.start();
+
+    Thread[] table_generators = new Thread[tableCount];
+    for(int i = 0; i < tableCount; i++) {
+      table_generators[i] = new Thread(table_gen);
+      table_generators[i].start();
+    }
+
     try {
-      thread1.join();
-      thread2.join();
-      thread3.join();
+      for(Thread thread : table_generators) {
+        thread.join();
+      }
     } catch(Exception e) {
       e.printStackTrace();
       System.exit(-1);
     }
 
-//      task.run();
-//    }
-//    if(DEBUG) {
-//      System.out.println("Collisions: " + totalCollisions);
-//    }
   }
 
   /**
@@ -349,29 +338,8 @@ public class Table {
     return builtString;
   }
 
-  /**
-   * Hash reduction algorithm. Produces different result for the same hash depending on supplied
-   * <code>salt</code>.
-   * @param hash Hash in byte[] form
-   * @param salt int that acts as modifier to method's output
-   * @return Plain-text key
-   */
-//  protected String hashToKey(byte[] hash, int salt) {
-//    return Table.hashToKey(hash, salt, keyLength);
-//  }
-
-  /**
-   * Hash, reduce, n times, along a chain that starts with <code>initialKey</code>.
-   * @param initialKey Initial plain-text key
-   * @param n Number of times to hash, reduce
-   * @return Result of 'n' hash, reduce steps
-   */
-//  protected String keyToKeyStep(String initialKey, int n) {
-//    return Table.keyToKeyStep(initialKey, n, chainLength, keyLength);
-//  }
 
   // PRIVATE
-
   /**
    * Rudimentary check for all expected tables. Tables could still exist but be incomplete.
    * @return True if expected tables exist, false if not

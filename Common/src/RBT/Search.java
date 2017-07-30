@@ -73,9 +73,8 @@ public class Search {
       // Run through the chain...
       for (int j = 0; j < rbt.chainLength; j++) {
         curHash = rbt.hashToHashStep(searchHash_bytes, j);
-        if (rbt.hashToKeyMap.get(i).containsKey(curHash)) {
-          // Double check head of the chain leads to the desired hash
-          String chainHeadKey = rbt.hashToKeyMap.get(i).get(curHash);
+        if(rbt.containsHash(curHash)) {
+          String chainHeadKey = rbt.getHeadKey(curHash);
           String targetKey = rbt.keyToKeyStep(chainHeadKey, (rbt.chainLength - j - 1));
           if (Arrays.equals(Table.createShaHash(targetKey), searchHash_bytes)) {
             return targetKey;

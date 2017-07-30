@@ -57,7 +57,7 @@ public class Main {
     String[] debug_args = {
         "--key-length", "5",
         "--chain-length", "50",
-        "--row-count", "10000000",
+        "--row-count", "1000000",
         "--table-count", "5"};
     if(DEBUG) {
       args = debug_args;
@@ -103,5 +103,8 @@ public class Main {
       // Allow user to search
       rbt_search.searchUserInterface();
     }
+
+    rbt.close();
+
   }
 }

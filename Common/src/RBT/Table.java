@@ -39,6 +39,8 @@ public class Table {
   long rowCount;
   /** Simple name for a default parameter from <code>Config</code> object. */
   int tableCount;
+
+  long num;
   /**
    * A count of all possible keys, given <code>keyLength</code> and <code>ALLOWABLE_CHARS</code>.
    * @see #keyLength
@@ -66,6 +68,7 @@ public class Table {
     tableCount = tblcfg.getTblCount();
     allowableLength = tblcfg.ALLOWABLE_CHARS.length;
     keySpace = (long) Math.pow(allowableLength, keyLength);
+    num = rowCount;
 
     // Connect to the database
     try {
@@ -78,7 +81,7 @@ public class Table {
 
     // Check if the rainbow table we've been asked to create already exists. If not, create it.
     if (!existsRBTables()) {
-      generateTables(rowCount);
+      generateTables();
       // TODO: Better SQLException's
       try {
         conn.commit();
@@ -223,9 +226,8 @@ public class Table {
   // PROTECTED
   /**
    * Create a rainbow table of length <code>num</code>.
-   * @param num Length of table generated
    */
-  protected void generateTables(long num) {
+  protected void generateTables() {
     // Create the configured number ('tableCount') of DB tables
     for(int i = 0; i < tableCount; i++) {
       // Of the form: KLX_Y, where 'X' is the key length, 'Y' is the table number
@@ -252,35 +254,57 @@ public class Table {
     int totalCollisions = 0;
     int prevCollisions = 0; // Key collisions from the previous round
     long prevNum = num; // 'num' from previous round
-    while (num > 0) {
-      // DEBUG is set and time since last round started is >= printTime
-      if(DEBUG && ((currentTimeSeconds())-curTime) >= printTime) {
-        // "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s"
-        System.out.format("%d\t%d\t%d\t%d\t%d%n",
-            currentTimeSeconds() - startTime,
-            num,
-            prevNum-num,
-            totalCollisions-prevCollisions,
-            (prevNum-num)*chainLength/(currentTimeSeconds() - curTime));
-        curTime = currentTimeSeconds();
-        prevCollisions = totalCollisions;
-        prevNum = num;
-      }
-      String key = generateKey(); // Starting chain key
-      // Produce hash from the end of a chain of length 'chainLength' that starts with 'key'
-      byte[] hash = Tables.hashToHashStep(Tables.createShaHash(key), (chainLength - 1), tblcfg);
-      // Try to place the new 'key' and 'hash' in one of the available tables.
-      if(add(hash, key)) {
-        num--;
-      } else {
-        if(DEBUG) {
-          totalCollisions++;
+    Runnable task = () -> {
+      int collisions = 0;
+      while(num > 0) {
+        if(collisions > 1000000) {
+          System.out.println("Uhoh!");
+        }
+        String key = generateKey(); // Starting chain key
+        // Produce hash from the end of a chain of length 'chainLength' that starts with 'key'
+        byte[] hash = Tables.hashToHashStep(Tables.createShaHash(key), (chainLength - 1), tblcfg);
+        // Try to place the new 'key' and 'hash' in one of the available tables.
+        if(add(hash, key)) {
+          num--;
+        } else {
+          collisions++;
         }
       }
+    };
+//    while (num > 0) {
+//      // DEBUG is set and time since last round started is >= printTime
+//      if(DEBUG && ((currentTimeSeconds())-curTime) >= printTime) {
+//        // "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s"
+//        System.out.format("%d\t%d\t%d\t%d\t%d%n",
+//            currentTimeSeconds() - startTime,
+//            num,
+//            prevNum-num,
+//            totalCollisions-prevCollisions,
+//            (prevNum-num)*chainLength/(currentTimeSeconds() - curTime));
+//        curTime = currentTimeSeconds();
+//        prevCollisions = totalCollisions;
+//        prevNum = num;
+//      }
+    Thread thread1 = new Thread(task);
+    Thread thread2 = new Thread(task);
+    Thread thread3 = new Thread(task);
+    thread1.start();
+    thread2.start();
+    thread3.start();
+    try {
+      thread1.join();
+      thread2.join();
+      thread3.join();
+    } catch(Exception e) {
+      e.printStackTrace();
+      System.exit(-1);
     }
-    if(DEBUG) {
-      System.out.println("Collisions: " + totalCollisions);
-    }
+
+//      task.run();
+//    }
+//    if(DEBUG) {
+//      System.out.println("Collisions: " + totalCollisions);
+//    }
   }
 
   /**

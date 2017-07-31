@@ -36,7 +36,7 @@ public class Table {
    */
   Set<String> keysHashed = new TreeSet<>();
   /**
-   * List of <code>TreeMap</code>'s that contain hashes in <code>byte[]</code> form to
+   * LinkedList of <code>TreeMap</code>'s that contain hashes in <code>byte[]</code> form to
    * plain-text keys.
    * @see java.util.TreeMap
    */
@@ -61,21 +61,21 @@ public class Table {
   /** File location of the serialized <code>TreeMap</code> tables. */
   String fileName;
 
-  Config tblcfg;
+  Config cfg;
 
   /**
    * Constructs a rainbow table using parameters from <code>cfg</code>.
    * @param cfg Configuration parameters
    */
   Table(Config cfg) {
-    tblcfg = cfg;
+    this.cfg = cfg;
 
     // Set simple names for configuration options
-    keyLength = tblcfg.getKeyLen();
-    chainLength = tblcfg.getChainLen();
-    rowCount = tblcfg.getRowCount();
-    tableCount = tblcfg.getTblCount();
-    allowableLength = tblcfg.ALLOWABLE_CHARS.length;
+    keyLength = cfg.keyLength;
+    chainLength = cfg.getChainLen();
+    rowCount = cfg.getRowCount();
+    tableCount = cfg.getTblCount();
+    allowableLength = cfg.ALLOWABLE_CHARS.length;
     keySpace = (long) Math.pow(allowableLength, keyLength);
 
     // Add the requested (tableCount) number of empty TreeMap's.
@@ -90,12 +90,12 @@ public class Table {
      */
     // Create a string of configuration parameters, and hash that string for file name
     String cfgString =
-        Arrays.deepToString(tblcfg.ALLOWABLE_CHARS)
-            + keyLength
-            + chainLength
-            + rowCount
-            + tableCount;
-    fileName = "RT_" + cfgString.hashCode() + ".ser";
+        "AC" + allowableLength +
+        "KL" + keyLength +
+        "CL" + chainLength +
+        "RC" + rowCount +
+        "TC" + tableCount;
+    fileName = cfgString + ".ser";
 
     // Load the rainbow table represented by 'cfgString', if it exists, otherwise compute it.
     if (existsTableFile()) {
@@ -110,18 +110,18 @@ public class Table {
 
   // PROTECTED, STATIC
   /**
-   * Add a hash and key to the database.
+   * Add a hash and key to the table.
    * @param b Hash
    * @param key Plain-text key
    * @return Success or failure
    */
   protected boolean add(byte[] b, String key) {
     // Choose a random starting table for attempted insert
-    int tblNum = ThreadLocalRandom.current().nextInt(0, tableCount);
+    int tbl = ThreadLocalRandom.current().nextInt(0, tableCount);
     // Attempt insert on each table, if necessary
     for(int i = 0; i < tableCount; i++) {
-      if(!hashToKeyMap.get(tblNum).containsKey(b)) {
-        hashToKeyMap.get(tblNum).put(b, key);
+      if(!hashToKeyMap.get(tbl).containsKey(b)) {
+        hashToKeyMap.get(tbl).put(b, key);
         return true;
       }
     }
@@ -151,7 +151,7 @@ public class Table {
    * @return Head key, or blank if existent
    */
   protected String getHeadKey(byte[] b) {
-    // TODO: Benefit from radomization?
+    // TODO: Benefit from randomizing?
     for(int i = 0; i < tableCount; i++) {
       if(hashToKeyMap.get(i).containsKey(b)) {
         return hashToKeyMap.get(i).get(b);
@@ -177,7 +177,7 @@ public class Table {
     System.out.printf("    * %20s:%n", "Character set");
     // TODO: I know this output looks bad, but it appears the effort to wrap the output is more
     // trouble than it's worth right now.
-    System.out.println(Arrays.deepToString(tblcfg.ALLOWABLE_CHARS));
+    System.out.println(Arrays.deepToString(cfg.ALLOWABLE_CHARS));
     System.out.println();
   }
 
@@ -187,19 +187,25 @@ public class Table {
    * @param num Length of table generated
    */
   protected void generateTable(long num) {
-    if(DEBUG) {
-      System.out.format("Generating table of size %,d%n", num);
-      System.out.format("%s\t%s\t%s\t%s\t%s%n",
-          "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s");
-    }
+    // Mostly for debugging
     long startTime = currentTimeSeconds();
     long curTime = startTime; // Time since current round was started
     long printTime = 15; // Print every X seconds
     int totalCollisions = 0;
     int prevCollisions = 0; // Key collisions from the previous round
     long prevNum = num; // 'num' from previous round
+
+    if(DEBUG) {
+      System.out.format("Generating table of size %,d%n", num);
+      System.out.format("%s\t%s\t%s\t%s\t%s%n",
+          "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s");
+    }
+
     while (num > 0) {
-      // DEBUG is set and time since last round started is >= printTime
+
+      /*
+       * START DEBUGGING - DEBUG is set and time since last round started is >= printTime
+       */
       if(DEBUG && ((currentTimeSeconds())-curTime) >= printTime) {
         // "Elapsed", "Rows remaining", "Rows complete/time", "Collisions", "Successful H/s"
         System.out.format("%d\t%d\t%d\t%d\t%d%n",
@@ -212,9 +218,17 @@ public class Table {
         prevCollisions = totalCollisions;
         prevNum = num;
       }
+      /*
+       * END DEBUGGING
+       */
+
+      // Generate key
       String key = generateKey(); // Starting chain key
       // Produce hash from the end of a chain of length 'chainLength' that starts with 'key'
-      byte[] hash = Tables.hashToHashStep(Tables.createShaHash(key), (chainLength - 1), tblcfg);
+      byte[] hash = Tables.hashToHashStep(
+          Tables.createShaHash(key, cfg),
+          (chainLength - 1),
+          cfg);
       // Try to place the new 'key' and 'hash' in one of the available tables.
       if(add(hash, key)) {
         num--;
@@ -239,16 +253,6 @@ public class Table {
   }
 
   /**
-   * Reduce then hash, <code>n</code> times.
-   * @param initialHash Starting hash value
-   * @param n Number of times to hash, reduce
-   * @return Hash in byte[] form that is 'n' steps from 'initialHash'
-   */
-//  protected byte[] hashToHashStep(byte[] initialHash, int n) {
-//    return hashToHashStep(initialHash, n, chainLength, keyLength);
-//  }
-
-  /**
    * Randomly generates one key according to parameters in <code>Config</code> object,
    * provided at construction.
    * @see Config
@@ -263,7 +267,7 @@ public class Table {
       builtString = "";
       for (int i = 0; i < keyLength; i++) {
         builtString +=
-            tblcfg.ALLOWABLE_CHARS[ThreadLocalRandom.current().nextInt(0, allowableLength)];
+            cfg.ALLOWABLE_CHARS[ThreadLocalRandom.current().nextInt(0, allowableLength)];
       }
 
     } while (keysHashed.contains(builtString));
@@ -271,31 +275,16 @@ public class Table {
     return builtString;
   }
 
-//  /**
-//   * Hash reduction algorithm. Produces different result for the same hash depending on supplied
-//   * <code>salt</code>.
-//   * @param hash Hash in byte[] form
-//   * @param salt int that acts as modifier to method's output
-//   * @return Plain-text key
-//   */
-//  protected String hashToKey(byte[] hash, int salt) {
-//    return Table.hashToKey(hash, salt, keyLength);
-//  }
-
-//  /**
-//   * Hash, reduce, n times, along a chain that starts with <code>initialKey</code>.
-//   * @param initialKey Initial plain-text key
-//   * @param n Number of times to hash, reduce
-//   * @return Result of 'n' hash, reduce steps
-//   */
-//  protected String keyToKeyStep(String initialKey, int n) {
-//    return Table.keyToKeyStep(initialKey, n, chainLength, keyLength);
-//  }
-
   // PRIVATE
+
+  /**
+   * Check if table file(s) exist.
+   * @return Success or failure
+   */
   private boolean existsTableFile() {
     return Files.exists(Paths.get(fileName));
   }
+
   /**
    * Read in previously computed tables that match supplied <code>Config</code> object,
    * if it exists. <code>hashToKeyMap</code> is read from file.

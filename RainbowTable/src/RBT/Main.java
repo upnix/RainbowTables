@@ -19,7 +19,7 @@ public class Main {
    * Allows for successful execution without CLI arguments. "DEBUG" status does not extend
    * beyond <code>Main</code>
    * */
-  static final boolean DEBUG = true;
+  static final boolean DEBUG = false;
 
   /** Used for clearing the terminal screen. */
   private static final String ANSI_CLS = "\u001b[2J";

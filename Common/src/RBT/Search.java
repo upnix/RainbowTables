@@ -80,7 +80,7 @@ public class Search {
         if(rbt.containsHash(curHash)) {
           String chainHeadKey = rbt.getHeadKey(curHash);
           String targetKey = Tables.keyToKeyStep(chainHeadKey, (rbt.chainLength - j - 1), cfg);
-          if (Arrays.equals(Tables.createShaHash(targetKey), searchHash_bytes)) {
+          if (Arrays.equals(Tables.createShaHash(targetKey, cfg), searchHash_bytes)) {
             return targetKey;
           }
         }

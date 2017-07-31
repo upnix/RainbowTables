@@ -44,6 +44,20 @@ public class Tables {
    * Uses {@link java.security.MessageDigest#digest()}.
    * @see java.security.MessageDigest#digest()
    * @param plaintext String to hash
+   * @param cfg Rainbow table 'Config' object
+   * @return byte[] of length 20
+   */
+  protected static byte[] createShaHash(String plaintext, Config cfg) {
+    cfg.shaHash.update(plaintext.getBytes());
+
+    return cfg.shaHash.digest();
+  }
+
+  /**
+   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form.
+   * Uses {@link java.security.MessageDigest#digest()}.
+   * @see java.security.MessageDigest#digest()
+   * @param plaintext String to hash
    * @return byte[] of length 20
    */
   protected static byte[] createShaHash(String plaintext) {
@@ -58,27 +72,8 @@ public class Tables {
     return shaHash.digest();
   }
 
-//  /**
-//   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form.
-//   * Uses {@link java.security.MessageDigest#digest()}.
-//   * @see java.security.MessageDigest#digest()
-//   * @param plaintext String to hash
-//   * @return byte[] of length 20
-//   */
-//  protected static byte[] createShaHash(String plaintext, MessageDigest shaHash) {
-////    MessageDigest shaHash = null;
-////    try {
-////      shaHash = MessageDigest.getInstance("SHA-1");
-////    } catch(Exception e) {
-////      System.exit(-1);
-////    }
-//    shaHash.update(plaintext.getBytes());
-//
-//    return shaHash.digest();
-//  }
-
   /**
-   * Reduce then hash, <code>n</code> times. Static version.<br>
+   * Reduce then hash, <code>n</code> times.
    * This method takes a hash, treats it as if it were at some location on a chain, and then
    * runs it along the chain until the final position.<br>
    * So, consider steps ('n') to be counted <b><i>from the right side of the chain</i></b>.<p>
@@ -107,7 +102,7 @@ public class Tables {
     byte[] hash = initialHash; // Holds hash that's ultimately returned
     // Reduce (hashToKey()) then hash (createShaHash()), 'n' times
     for (int i = 0; i < n; i++) {
-      hash = createShaHash(hashToKey(hash, salt, rbtcfg));
+      hash = createShaHash(hashToKey(hash, salt, rbtcfg), rbtcfg);
       salt++;
     }
 
@@ -116,7 +111,7 @@ public class Tables {
 
   /**
    * Hash reduction algorithm. Produces different result for the same hash depending on supplied
-   * <code>salt</code>. Static version.<br>
+   * <code>salt</code>.
    * When considered against the *Step() methods, this could be considered a single step.
    * @param hash Hash in byte[] form
    * @param salt int that acts as modifier to method's output
@@ -159,14 +154,14 @@ public class Tables {
      * the new integer and turn it into a character appropriate for the keyspace.
      */
 
-    int chunks = hash.length / rbtcfg.getKeyLen(); // Integer division
+    int chunks = hash.length / rbtcfg.keyLength; // Integer division
     int extra = hash.length % chunks;
 
     int leftBound;
     int rightBound = 0;
     // The length of the plain-text key is used to divide the number of bytes in the hash
     // as evenly as possible.
-    for (int i = 0; i < rbtcfg.getKeyLen(); i++) {
+    for (int i = 0; i < rbtcfg.keyLength; i++) {
       leftBound = rightBound;
       if (extra > 0) {
         // Include one extra byte
@@ -200,7 +195,6 @@ public class Tables {
 
   /**
    * Hash, reduce, n times, along a chain that starts with <code>initialKey</code>.
-   * Static version.<br>
    * 'n' is a location on the chain, <b><i>when counting from left to right</i></b>, which should
    * point to the location of a target key (which isn't held in this method). The intent is that,
    * given the head of the chain, 'initialKey', 'n' steps in will be the particular key that the
@@ -220,10 +214,9 @@ public class Tables {
     String key = initialKey; // Key that's ultimately returned
     // Hash (createShaHash) then reduce (hashToKey) 'n' times
     for (int i = 0; i < n; i++) {
-      key = hashToKey(createShaHash(key), i, rbtcfg);
+      key = hashToKey(createShaHash(key, rbtcfg), i, rbtcfg);
     }
 
     return key;
   }
-
 }

@@ -23,6 +23,7 @@ public class Search {
    * Constructs a <code>Search</code> object that works against the provided rainbow table.
    * @see Table
    * @param rbt Rainbow table, as represented by 'Table' object
+   * @param cfg Rainbow table 'Config' object
    */
   public Search(Table rbt, Config cfg) {
     this.rbt = rbt;

@@ -8,19 +8,24 @@ import java.util.Scanner;
  *
  * @see Config
  * @see Table
+ * @see Tables
  * @author Chris Cameron
  */
 public class Search {
   /**
-   * <code>Table</code> object. This is the "rainbow table".
+   * The passed "rainbow table" <code>Table</code> object.
    * @see Table
    */
   private Table rbt;
-
+  /**
+   * <code>Config</code> object that represents the table being passed.
+   * @see Config
+   */
   private Config cfg;
 
   /**
    * Constructs a <code>Search</code> object that works against the provided rainbow table.
+   * @see Config
    * @see Table
    * @param rbt Rainbow table, as represented by 'Table' object
    * @param cfg Rainbow table 'Config' object

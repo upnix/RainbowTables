@@ -2,6 +2,13 @@ package RBT;
 
 import java.security.MessageDigest;
 
+/**
+ * This class contains various static methods for working with <code>Table</code> object.
+ *
+ * @see Config
+ * @see Table
+ * @author Chris Cameron
+ */
 public class Tables {
   /**
    * Converts a byte array to hex for familiar looking SHA-1 hashes.<br>
@@ -40,8 +47,9 @@ public class Tables {
   }
 
   /**
-   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form.
-   * Uses {@link java.security.MessageDigest#digest()}.
+   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form using the 'MessageDigest'
+   * object in the passed <code>cfg</code>.
+   *
    * @see java.security.MessageDigest#digest()
    * @param plaintext String to hash
    * @param cfg Rainbow table 'Config' object
@@ -54,8 +62,9 @@ public class Tables {
   }
 
   /**
-   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form.
-   * Uses {@link java.security.MessageDigest#digest()}.
+   * Creates an SHA-1 hash of supplied string in <code>byte[]</code> form, creating a new
+   * 'MessageDigest' object.
+   *
    * @see java.security.MessageDigest#digest()
    * @param plaintext String to hash
    * @return byte[] of length 20
@@ -154,14 +163,14 @@ public class Tables {
      * the new integer and turn it into a character appropriate for the keyspace.
      */
 
-    int chunks = hash.length / rbtcfg.keyLength; // Integer division
+    int chunks = hash.length / rbtcfg.KEYLENGTH; // Integer division
     int extra = hash.length % chunks;
 
     int leftBound;
     int rightBound = 0;
     // The length of the plain-text key is used to divide the number of bytes in the hash
     // as evenly as possible.
-    for (int i = 0; i < rbtcfg.keyLength; i++) {
+    for (int i = 0; i < rbtcfg.KEYLENGTH; i++) {
       leftBound = rightBound;
       if (extra > 0) {
         // Include one extra byte

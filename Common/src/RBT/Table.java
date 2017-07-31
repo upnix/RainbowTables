@@ -24,6 +24,7 @@ import org.msgpack.core.MessageUnpacker;
  *
  * @see Config
  * @see Search
+ * @see Tables
  * @author Chris Cameron
  */
 public class Table {
@@ -53,14 +54,17 @@ public class Table {
   /** Simple name for a default parameter from <code>Config</code> object. */
   int tableCount;
   /**
-   * A count of all possible keys, given <code>keyLength</code> and <code>ALLOWABLE_CHARS</code>.
+   * A count of all possible keys, given <code>KEYLENGTH</code> and <code>ALLOWABLE_CHARS</code>.
    * @see #keyLength
    * @see Config#ALLOWABLE_CHARS
    * */
   long keySpace;
   /** File location of the serialized <code>TreeMap</code> tables. */
   String fileName;
-
+  /**
+   * <code>Config</code> object that represents the table to be generated.
+   * @see Config
+   */
   Config cfg;
 
   /**
@@ -71,7 +75,7 @@ public class Table {
     this.cfg = cfg;
 
     // Set simple names for configuration options
-    keyLength = cfg.keyLength;
+    keyLength = cfg.KEYLENGTH;
     chainLength = cfg.getChainLen();
     rowCount = cfg.getRowCount();
     tableCount = cfg.getTblCount();
